@@ -1,10 +1,28 @@
-# Clean config for dirty builds
-# -----------------------------
-rm -f .qmake.stash .qmake.cache || true
+set -exou
 
 # Compile
 # -------
 chmod +x configure
+
+# Clean config for dirty builds
+# -----------------------------
+if [[ -d qt-build ]]; then
+  rm -rf qt-build
+fi
+
+mkdir qt-build
+pushd qt-build
+
+echo PREFIX=${PREFIX}
+echo BUILD_PREFIX=${BUILD_PREFIX}
+USED_BUILD_PREFIX=${BUILD_PREFIX:-${PREFIX}}
+echo USED_BUILD_PREFIX=${BUILD_PREFIX}
+
+MAKE_JOBS=$CPU_COUNT
+export NINJAFLAGS="-j${MAKE_JOBS}"
+
+# For QDoc
+export LLVM_INSTALL_DIR=${USED_BUILD_PREFIX}
 
 # Remove the full path from CXX etc. If we don't do this
 # then the full path at build time gets put into
@@ -22,97 +40,34 @@ do
     unset $x
 done
 
-echo PREFIX=${PREFIX}
-echo BUILD_PREFIX=${BUILD_PREFIX}
-USED_BUILD_PREFIX=${BUILD_PREFIX:-${PREFIX}}
-echo USED_BUILD_PREFIX=${BUILD_PREFIX}
-
-MAKE_JOBS=$CPU_COUNT
-export NINJAFLAGS="-j${MAKE_JOBS}"
 # You can use this to cut down on the number of modules built. Of course the Qt package will not be of
 # much use, but it is useful if you are iterating on e.g. figuring out compiler flags to reduce the
 # size of the libraries.
 MINIMAL_BUILD=no
 
-if [[ -d qtwebkit ]]; then
-  # From: http://www.linuxfromscratch.org/blfs/view/svn/x/qtwebkit5.html
-  # Should really be a patch:
-  sed -i.bak -e '/CONFIG/a\
-    QMAKE_CXXFLAGS += -Wno-expansion-to-defined' qtwebkit/Tools/qmake/mkspecs/features/unix/default_pre.prf
-fi
-
-# For QDoc
-export LLVM_INSTALL_DIR=${USED_BUILD_PREFIX}
-
 # Remove protobuf which is pulled in indirectly
-rm -rf $PREFIX/include/google/protobuf
-rm -rf $PREFIX/bin/protoc
+# rm -rf $PREFIX/include/google/protobuf
+# rm -rf $PREFIX/bin/protoc
 
-# Problems: https://bugreports.qt.io/browse/QTBUG-61158
-#           (same thing happens for libyuv, it does not pickup the -I$PREFIX/include)
-# Something to do with BUILD.gn files and/or ninja
-# To find the files that do not include $PREFIX/include:
-# pushd /opt/conda/conda-bld/qt_1520013782031/work/qtwebengine/src
-# grep -R include_dirs . | grep ninja | grep -v _h_env_ | cut -d':' -f 1 | sort | uniq
-# To find the files that do:
-# pushd /opt/conda/conda-bld/qt_1520013782031/work/qtwebengine/src
-# grep -R include_dirs . | grep ninja | grep _h_env_ | cut -d':' -f 1 | sort | uniq
-# Need to figure out what in the BUILD.gn files is different, so compare the smallest file from each?
-# grep -R include_dirs . | grep ninja | grep -v _h_env_ | cut -d':' -f 1 | sort | uniq | xargs stat -c "%s %n" 2>/dev/null | sort -h | head -n 10
-# grep -R include_dirs . | grep ninja | grep    _h_env_ | cut -d':' -f 1 | sort | uniq | xargs stat -c "%s %n" 2>/dev/null | sort -h | head -n 10
-# Then find the .gn or .gni files that these ninja files were created from and figure out wtf is going on.
-
-# qtwebengine needs python 2
-conda create -y --prefix "${SRC_DIR}/python2_hack" -c https://repo.continuum.io/pkgs/main --no-deps python=2
-export PATH=${SRC_DIR}/python2_hack/bin:${PATH}
-
-if [[ ${HOST} =~ .*linux.* ]]; then
-
-    if ! which ruby > /dev/null 2>&1; then
-        echo "You need ruby to build qtwebkit"
-        exit 1
-    fi
-
+if [[ $(uname) == "Linux" ]]; then
     ln -s ${GXX} g++ || true
     ln -s ${GCC} gcc || true
     # Needed for -ltcg, it we merge build and host again, change to ${PREFIX}
     ln -s ${USED_BUILD_PREFIX}/bin/${HOST}-gcc-ar gcc-ar || true
-    chmod +x g++ gcc gcc-ar
-    export PATH=${PWD}:${PATH}
+
     export LD=${GXX}
     export CC=${GCC}
     export CXX=${GXX}
-
-    conda create -y --prefix "${SRC_DIR}/openssl_hack" -c https://repo.continuum.io/pkgs/main  \
-                  --no-deps --yes --copy --prefix "${SRC_DIR}/openssl_hack"  \
-                  openssl=${openssl}
-    export OPENSSL_LIBS="-L${SRC_DIR}/openssl_hack/lib -lssl -lcrypto"
-    rm -rf ${PREFIX}/include/openssl
-
-    # Qt has some braindamaged behaviour around handling compiler system include and lib paths. Basically, if it finds any include dir
-    # that is a system include dir then it prefixes it with -isystem. Problem is, passing -isystem <blah> causes GCC to forget all the
-    # other system include paths. The reason that Qt needs to know about these paths is probably due to moc needing to know about them
-    # so we cannot just elide them altogether. Instead, as soon as Qt sees one system path it needs to add them all as a group, in the
-    # correct order. This is probably fairly tricky so we work around needing to do that by having them all be present all the time.
-    #
-    # Further, any system dirs that appear from the output from pkg-config (QT_XCB_CFLAGS) can cause incorrect emission ordering so we
-    # must filter those out too which we do with a pkg-config wrapper.
-    #
-    # References:
-    #
-    # https://github.com/voidlinux/void-packages/issues/5254
-    # https://github.com/qt/qtbase/commit/0b144bc76a368ecc6c5c1121a1b51e888a0621ac
-    # https://codereview.qt-project.org/#/c/157817/
-    #
-    sed -i "s/-isystem//g" "qtbase/mkspecs/common/gcc-base.conf"
+    export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/lib64/pkgconfig/"
     export PKG_CONFIG_LIBDIR=$(${USED_BUILD_PREFIX}/bin/pkg-config --pclibdir)
 
+    chmod +x g++ gcc gcc-ar
     export PATH=${PWD}:${PATH}
+
     declare -a SKIPS
     if [[ ${MINIMAL_BUILD} == yes ]]; then
       SKIPS+=(-skip); SKIPS+=(qtwebsockets)
       SKIPS+=(-skip); SKIPS+=(qtwebchannel)
-      SKIPS+=(-skip); SKIPS+=(qtwebengine)
       SKIPS+=(-skip); SKIPS+=(qtsvg)
       SKIPS+=(-skip); SKIPS+=(qtsensors)
       SKIPS+=(-skip); SKIPS+=(qtcanvas3d)
@@ -122,35 +77,6 @@ if [[ ${HOST} =~ .*linux.* ]]; then
       SKIPS+=(-skip); SKIPS+=(qttools)
       SKIPS+=(-skip); SKIPS+=(qtlocation)
       SKIPS+=(-skip); SKIPS+=(qt3d)
-    fi
-    declare -A COS6_MISSING_DEFINES
-    if [[ ${_CONDA_PYTHON_SYSCONFIGDATA_NAME} == *cos6* ]]; then
-      COS6_MISSING_DEFINES["SYN_DROPPED"]="3"
-      COS6_MISSING_DEFINES["BTN_TRIGGER_HAPPY1"]="0x2c0"
-      COS6_MISSING_DEFINES["BTN_TRIGGER_HAPPY2"]="0x2c1"
-      COS6_MISSING_DEFINES["BTN_TRIGGER_HAPPY3"]="0x2c2"
-      COS6_MISSING_DEFINES["BTN_TRIGGER_HAPPY4"]="0x2c3"
-      COS6_MISSING_DEFINES["BTN_TRIGGER_HAPPY17"]="0x2d0"
-      COS6_MISSING_DEFINES["INPUT_PROP_POINTER"]="0x00"
-      COS6_MISSING_DEFINES["INPUT_PROP_DIRECT"]="0x01"
-      COS6_MISSING_DEFINES["INPUT_PROP_BUTTONPAD"]="0x02"
-      COS6_MISSING_DEFINES["INPUT_PROP_SEMI_MT"]="0x03"
-      COS6_MISSING_DEFINES["INPUT_PROP_MAX"]="0x1f"
-      COS6_MISSING_DEFINES["INPUT_PROP_CNT"]="0x20"
-      COS6_MISSING_DEFINES["ABS_MT_SLOT"]="0x2f"
-      COS6_MISSING_DEFINES["ABS_MT_PRESSURE"]="0x3a"
-      COS6_MISSING_DEFINES["ABS_MT_DISTANCE"]="0x3b"
-
-      # MAJOR HACK ahead!!!!!!
-      # The above macros are missing in cos6 and there are a few files that I have to patch to make it work
-      # Tried giving this as macros to ./configure, but the configure script doesn't pass them to ninja when building chromium.
-      for key in ${!COS6_MISSING_DEFINES[@]}; do
-        mv ${BUILD_PREFIX}/${HOST}/sysroot/usr/include/linux/input.h ${BUILD_PREFIX}/${HOST}/sysroot/usr/include/linux/input.h.bak
-        cp ${BUILD_PREFIX}/${HOST}/sysroot/usr/include/linux/input.h.bak ${BUILD_PREFIX}/${HOST}/sysroot/usr/include/linux/input.h
-        echo "#ifndef ${key}"                                 >> ${BUILD_PREFIX}/${HOST}/sysroot/usr/include/linux/input.h
-        echo "#define ${key} ${COS6_MISSING_DEFINES[${key}]}" >> ${BUILD_PREFIX}/${HOST}/sysroot/usr/include/linux/input.h
-        echo "#endif" >> ${BUILD_PREFIX}/${HOST}/sysroot/usr/include/linux/input.h
-      done
     fi
 
     if [ ${target_platform} == "linux-aarch64" ] || [ ${target_platform} == "linux-ppc64le" ]; then
@@ -175,10 +101,10 @@ if [[ ${HOST} =~ .*linux.* ]]; then
                 -headerdir ${PREFIX}/include/qt \
                 -archdatadir ${PREFIX} \
                 -datadir ${PREFIX} \
-                -I ${SRC_DIR}/openssl_hack/include \
                 -I ${PREFIX}/include \
                 -L ${PREFIX}/lib \
                 -L ${BUILD_PREFIX}/${HOST}/sysroot/usr/lib64 \
+                QMAKE_LFLAGS+="-Wl,-rpath,$PREFIX/lib -Wl,-rpath-link,$PREFIX/lib -L$PREFIX/lib" \
                 -release \
                 -opensource \
                 -confirm-license \
@@ -187,6 +113,8 @@ if [[ ${HOST} =~ .*linux.* ]]; then
                 -nomake tests \
                 -verbose \
                 -skip wayland \
+                -skip qtwebengine \
+                -gstreamer 1.0 \
                 -system-libjpeg \
                 -system-libpng \
                 -system-zlib \
@@ -194,14 +122,16 @@ if [[ ${HOST} =~ .*linux.* ]]; then
                 -plugin-sql-sqlite \
                 -plugin-sql-mysql \
                 -plugin-sql-psql \
+                -xcb \
+                -xcb-xlib \
+                -bundled-xcb-xinput \
                 -qt-pcre \
-                -qt-xcb \
                 -xkbcommon \
                 -dbus \
                 -no-linuxfb \
                 -no-libudev \
-                -no-avx \
-                -no-avx2 \
+                # -no-avx \
+                # -no-avx2 \
                 -optimize-size \
                 ${REDUCE_RELOCATIONS} \
                 -cups \
@@ -215,33 +145,14 @@ if [[ ${HOST} =~ .*linux.* ]]; then
                 -D FC_WEIGHT_EXTRABLACK=215 \
                 -D FC_WEIGHT_ULTRABLACK=FC_WEIGHT_EXTRABLACK \
                 -D GLX_GLXEXT_PROTOTYPES \
-                "${SKIPS[@]}" \
-                QMAKE_LFLAGS+="-Wl,-rpath,$PREFIX/lib -Wl,-rpath-link,$PREFIX/lib -L$PREFIX/lib"
-
-
+                "${SKIPS[@]}"
 
 # ltcg bloats a test tar.bz2 from 24524263 to 43257121 (built with the following skips)
 #                -ltcg \
 #                --disable-new-dtags \
 
-    if [[ ${MINIMAL_BUILD} != yes ]]; then
-      CPATH=$PREFIX/include LD_LIBRARY_PATH=$PREFIX/lib make -j${MAKE_JOBS} module-qtwebengine || exit 1
-      if find . -name "libQt5WebEngine*so" -exec false {} +; then
-        echo "Did not build qtwebengine, exiting"
-        exit 1
-      fi
-    fi
-    CPATH=$PREFIX/include LD_LIBRARY_PATH=$PREFIX/lib make -j${MAKE_JOBS} module-qtwebsockets || exit 1
-    CPATH=$PREFIX/include LD_LIBRARY_PATH=$PREFIX/lib make -j${MAKE_JOBS} module-qtwebchannel || exit 1
-    CPATH=$PREFIX/include LD_LIBRARY_PATH=$PREFIX/lib make -j${MAKE_JOBS} module-qtsvg || exit 1
-    CPATH=$PREFIX/include LD_LIBRARY_PATH=$PREFIX/lib make -j${MAKE_JOBS} module-qtsensors || exit 1
-    CPATH=$PREFIX/include LD_LIBRARY_PATH=$PREFIX/lib make -j${MAKE_JOBS} module-qtcanvas3d || exit 1
-    CPATH=$PREFIX/include LD_LIBRARY_PATH=$PREFIX/lib make -j${MAKE_JOBS} module-qtconnectivity || exit 1
-    CPATH=$PREFIX/include LD_LIBRARY_PATH=$PREFIX/lib make -j${MAKE_JOBS} module-qttools || exit 1
-    CPATH=$PREFIX/include LD_LIBRARY_PATH=$PREFIX/lib make -j${MAKE_JOBS} module-qtlocation || exit 1
-    CPATH=$PREFIX/include LD_LIBRARY_PATH=$PREFIX/lib make -j${MAKE_JOBS} module-qt3d || exit 1
-    CPATH=$PREFIX/include LD_LIBRARY_PATH=$PREFIX/lib make -j${MAKE_JOBS} || exit 1
-    make install
+  make -j${MAKE_JOBS}
+  make install
 fi
 
 if [[ ${HOST} =~ .*darwin.* ]]; then
@@ -271,7 +182,7 @@ if [[ ${HOST} =~ .*darwin.* ]]; then
         exit 1
       fi
     fi
-    
+
     sed -i.bak "s/-Wno-c++11-narrowing'/-Wno-c++11-narrowing', '-Wno-elaborated-enum-base'/g" qtwebengine/src/3rdparty/gn/build/gen.py
     sed -i.bak 's/-Wno-address-of-packed-member"/-Wno-address-of-packed-member", "-Wno-elaborated-enum-base"/g' qtwebengine/src/3rdparty/chromium/build/config/compiler/BUILD.gn
 
