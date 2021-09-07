@@ -153,7 +153,7 @@ requirements:
     - {{ pin_compatible("nspr") }}       # [unix]
     - libxcb                             # [linux]
     - {{ pin_compatible("libclang") }}
-    - {{ pin_compatible("libjpeg_turbo") }}
+    - {{ pin_compatible("jpeg") }}
     - pulseaudio                         # [linux and not aarch64]
     - gstreamer                          # [not arm64]
   run_constrained:                                            # [osx]
