@@ -1,5 +1,7 @@
 c_compiler:
 - vs2017
+cdt_name:
+- cos7
 channel_sources:
 - conda-forge,defaults
 channel_targets:
@@ -8,10 +10,14 @@ curl:
 - '7'
 cxx_compiler:
 - vs2017
+gst_plugins_base:
+- '1.18'
+gstreamer:
+- '1.18'
 icu:
 - '68'
-jpeg:
-- '9'
+libjpeg_turbo:
+- '2'
 libpng:
 - '1.6'
 openssl:
@@ -19,7 +25,7 @@ openssl:
 pin_run_as_build:
   curl:
     max_pin: x
-  jpeg:
+  libjpeg_turbo:
     max_pin: x
   libpng:
     max_pin: x.x
