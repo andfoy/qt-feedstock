@@ -61,12 +61,6 @@ if [[ $(uname) == "Linux" ]]; then
     export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/lib64/pkgconfig/"
     # export PKG_CONFIG_LIBDIR=$(${USED_BUILD_PREFIX}/bin/pkg-config --pclibdir)
 
-    conda create -y --prefix "${SRC_DIR}/openssl_hack" -c https://repo.continuum.io/pkgs/main  \
-                  --no-deps --yes --copy --prefix "${SRC_DIR}/openssl_hack"  \
-                  openssl=${openssl}
-    export OPENSSL_LIBS="-L${SRC_DIR}/openssl_hack/lib -lssl -lcrypto"
-    rm -rf ${PREFIX}/include/openssl
-
     chmod +x g++ gcc gcc-ar
     export PATH=${PWD}:${PATH}
 
