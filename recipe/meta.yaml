@@ -81,6 +81,7 @@ requirements:
     - {{ cdt('libxxf86vm') }}            # [linux]
     - {{ cdt('libxxf86vm-devel') }}      # [linux]
     - {{ cdt('cups-devel') }}            # [linux]
+    - {{ cdt('libsm-devel') }}      # [linux]
     - {{ cdt('libxcb') }}                # [linux]
     - {{ cdt('libxcb-devel') }}          # [linux]
     - {{ cdt('expat-devel') }}           # [linux]
