@@ -63,23 +63,6 @@ if [[ $(uname) == "Linux" ]]; then
     chmod +x g++ gcc gcc-ar
     export PATH=${PWD}:${PATH}
 
-    # Qt has some braindamaged behaviour around handling compiler system include and lib paths. Basically, if it finds any include dir
-    # that is a system include dir then it prefixes it with -isystem. Problem is, passing -isystem <blah> causes GCC to forget all the
-    # other system include paths. The reason that Qt needs to know about these paths is probably due to moc needing to know about them
-    # so we cannot just elide them altogether. Instead, as soon as Qt sees one system path it needs to add them all as a group, in the
-    # correct order. This is probably fairly tricky so we work around needing to do that by having them all be present all the time.
-    #
-    # Further, any system dirs that appear from the output from pkg-config (QT_XCB_CFLAGS) can cause incorrect emission ordering so we
-    # must filter those out too which we do with a pkg-config wrapper.
-    #
-    # References:
-    #
-    # https://github.com/voidlinux/void-packages/issues/5254
-    # https://github.com/qt/qtbase/commit/0b144bc76a368ecc6c5c1121a1b51e888a0621ac
-    # https://codereview.qt-project.org/#/c/157817/
-    #
-    sed -i "s/-isystem//g" "../qtbase/mkspecs/common/gcc-base.conf"
-
     declare -a SKIPS
     if [[ ${MINIMAL_BUILD} == yes ]]; then
       SKIPS+=(-skip); SKIPS+=(qtwebsockets)
@@ -111,55 +94,30 @@ if [[ $(uname) == "Linux" ]]; then
     # Had been trying with:
     #   -sysroot ${BUILD_PREFIX}/${HOST}/sysroot
     # .. but it probably requires changing -L ${BUILD_PREFIX}/${HOST}/sysroot/usr/lib64 to -L /usr/lib64
-    ../configure -prefix ${PREFIX} \
-                 -libdir ${PREFIX}/lib \
-                 -bindir ${PREFIX}/bin \
-                 -headerdir ${PREFIX}/include/qt \
-                 -archdatadir ${PREFIX} \
-                 -datadir ${PREFIX} \
-                 -I ${PREFIX}/include \
-                 -I ${SRC_DIR}/openssl_hack/include \
-                 -L ${PREFIX}/lib \
-                 -L ${BUILD_PREFIX}/${HOST}/sysroot/usr/lib64 \
-                 QMAKE_LFLAGS+="-Wl,-rpath,$PREFIX/lib -Wl,-rpath-link,$PREFIX/lib -L$PREFIX/lib" \
-                 -release \
-                 -opensource \
-                 -confirm-license \
-                 -shared \
-                 -nomake examples \
-                 -nomake tests \
-                 -verbose \
-                 -skip wayland \
-                 -skip qtwebengine \
-                 -gstreamer 1.0 \
-                 -system-libjpeg \
-                 -system-libpng \
-                 -system-zlib \
-                 -system-sqlite \
-                 -plugin-sql-sqlite \
-                 -plugin-sql-mysql \
-                 -plugin-sql-psql \
-                 -xcb \
-                 -xcb-xlib \
-                 -bundled-xcb-xinput \
-                 -qt-pcre \
-                 -xkbcommon \
-                 -dbus \
-                 -no-linuxfb \
-                 -no-libudev \
-                 -optimize-size \
-                 ${REDUCE_RELOCATIONS} \
-                 -openssl-linked \
-                 -openssl \
-                 -Wno-expansion-to-defined \
-                 -D _X_INLINE=inline \
-                 -D XK_dead_currency=0xfe6f \
-                 -D _FORTIFY_SOURCE=2 \
-                 -D XK_ISO_Level5_Lock=0xfe13 \
-                 -D FC_WEIGHT_EXTRABLACK=215 \
-                 -D FC_WEIGHT_ULTRABLACK=FC_WEIGHT_EXTRABLACK \
-                 -D GLX_GLXEXT_PROTOTYPES \
-                 "${SKIPS[@]+"${SKIPS[@]}"}"
+    NPROC=$(nproc)
+
+  ../configure -prefix ${PREFIX} \
+             -libdir ${PREFIX}/lib \
+             -bindir ${PREFIX}/bin \
+             -headerdir ${PREFIX}/include/qt \
+             -archdatadir ${PREFIX} \
+             -datadir ${PREFIX} \
+             -I ${PREFIX}/include \
+             -L ${PREFIX}/lib \
+             -L ${BUILD_PREFIX}/${HOST}/sysroot/usr/lib64 \
+             QMAKE_LFLAGS+="-Wl,-rpath,$PREFIX/lib -Wl,-rpath-link,$PREFIX/lib -L$PREFIX/lib" \
+             -opensource \
+             -nomake examples \
+             -nomake tests \
+             -gstreamer 1.0 \
+             -skip qtwebengine \
+             -confirm-license \
+             -system-libjpeg \
+             -system-libpng \
+             -system-zlib \
+             -xcb \
+             -xcb-xlib \
+             -bundled-xcb-xinput
 
 # ltcg bloats a test tar.bz2 from 24524263 to 43257121 (built with the following skips)
 #                -ltcg \
