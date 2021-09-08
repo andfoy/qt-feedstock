@@ -78,7 +78,7 @@ if [[ $(uname) == "Linux" ]]; then
     # https://github.com/qt/qtbase/commit/0b144bc76a368ecc6c5c1121a1b51e888a0621ac
     # https://codereview.qt-project.org/#/c/157817/
     #
-    sed -i "s/-isystem//g" "qtbase/mkspecs/common/gcc-base.conf"
+    sed -i "s/-isystem//g" "../qtbase/mkspecs/common/gcc-base.conf"
 
     declare -a SKIPS
     if [[ ${MINIMAL_BUILD} == yes ]]; then
