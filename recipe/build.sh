@@ -149,7 +149,6 @@ if [[ $(uname) == "Linux" ]]; then
                  -no-libudev \
                  -optimize-size \
                  ${REDUCE_RELOCATIONS} \
-                 -cups \
                  -openssl-linked \
                  -openssl \
                  -Wno-expansion-to-defined \
