@@ -94,30 +94,56 @@ if [[ $(uname) == "Linux" ]]; then
     # Had been trying with:
     #   -sysroot ${BUILD_PREFIX}/${HOST}/sysroot
     # .. but it probably requires changing -L ${BUILD_PREFIX}/${HOST}/sysroot/usr/lib64 to -L /usr/lib64
-    NPROC=$(nproc)
-
-  ../configure -prefix ${PREFIX} \
-             -libdir ${PREFIX}/lib \
-             -bindir ${PREFIX}/bin \
-             -headerdir ${PREFIX}/include/qt \
-             -archdatadir ${PREFIX} \
-             -datadir ${PREFIX} \
-             -I ${PREFIX}/include \
-             -L ${PREFIX}/lib \
-             -L ${BUILD_PREFIX}/${HOST}/sysroot/usr/lib64 \
-             QMAKE_LFLAGS+="-Wl,-rpath,$PREFIX/lib -Wl,-rpath-link,$PREFIX/lib -L$PREFIX/lib" \
-             -opensource \
-             -nomake examples \
-             -nomake tests \
-             -gstreamer 1.0 \
-             -skip qtwebengine \
-             -confirm-license \
-             -system-libjpeg \
-             -system-libpng \
-             -system-zlib \
-             -xcb \
-             -xcb-xlib \
-             -bundled-xcb-xinput
+    ../configure -prefix ${PREFIX} \
+                 -libdir ${PREFIX}/lib \
+                 -bindir ${PREFIX}/bin \
+                 -headerdir ${PREFIX}/include/qt \
+                 -archdatadir ${PREFIX} \
+                 -datadir ${PREFIX} \
+                 -I ${PREFIX}/include \
+                 -I ${SRC_DIR}/openssl_hack/include \
+                 -L ${PREFIX}/lib \
+                 -L ${BUILD_PREFIX}/${HOST}/sysroot/usr/lib64 \
+                 -L ${BUILD_PREFIX}/${HOST}/sysroot/usr/lib \
+                 QMAKE_LFLAGS+="-Wl,-rpath,$PREFIX/lib -Wl,-rpath-link,$PREFIX/lib -L$PREFIX/lib" \
+                 -release \
+                 -opensource \
+                 -confirm-license \
+                 -shared \
+                 -nomake examples \
+                 -nomake tests \
+                 -verbose \
+                 -skip wayland \
+                 -skip qtwebengine \
+                 -gstreamer 1.0 \
+                 -system-libjpeg \
+                 -system-libpng \
+                 -system-zlib \
+                 -system-sqlite \
+                 -plugin-sql-sqlite \
+                 -plugin-sql-mysql \
+                 -plugin-sql-psql \
+                 -xcb \
+                 -xcb-xlib \
+                 -bundled-xcb-xinput \
+                 -qt-pcre \
+                 -xkbcommon \
+                 -dbus \
+                 -no-linuxfb \
+                 -no-libudev \
+                 -optimize-size \
+                 ${REDUCE_RELOCATIONS} \
+                 -openssl-linked \
+                 -openssl \
+                 -Wno-expansion-to-defined \
+                 -D _X_INLINE=inline \
+                 -D XK_dead_currency=0xfe6f \
+                 -D _FORTIFY_SOURCE=2 \
+                 -D XK_ISO_Level5_Lock=0xfe13 \
+                 -D FC_WEIGHT_EXTRABLACK=215 \
+                 -D FC_WEIGHT_ULTRABLACK=FC_WEIGHT_EXTRABLACK \
+                 -D GLX_GLXEXT_PROTOTYPES \
+                 "${SKIPS[@]+"${SKIPS[@]}"}"
 
 # ltcg bloats a test tar.bz2 from 24524263 to 43257121 (built with the following skips)
 #                -ltcg \
