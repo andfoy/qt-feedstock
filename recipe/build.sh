@@ -129,6 +129,7 @@ if [[ $(uname) == "Linux" ]]; then
                  -qt-pcre \
                  -xkbcommon \
                  -dbus \
+                 -cups \
                  -no-linuxfb \
                  -no-libudev \
                  -optimize-size \
