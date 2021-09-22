@@ -91,8 +91,11 @@ if [[ $(uname) == "Linux" ]]; then
                   openssl=1.0.2u
 
     # Rename the binaries because the CentOS ones have different version names
-    ln -s ${SRC_DIR}/openssl_hack/lib/libssl.so.1.0.0 ${PREFIX}/lib/libssl.so.10
-    ln -s ${SRC_DIR}/openssl_hack/lib/libcrypto.so.1.0.0 ${PREFIX}/lib/libcrypto.so.10
+    cp ${SRC_DIR}/openssl_hack/lib/libssl.so.1.0.0 ${PREFIX}/lib/libssl.so.10
+    cp ${SRC_DIR}/openssl_hack/lib/libcrypto.so.1.0.0 ${PREFIX}/lib/libcrypto.so.10
+
+    cp ${SRC_DIR}/openssl_hack/lib/libssl.so.1.0.0 ${PREFIX}/lib/libssl.so.1.0.0
+    cp ${SRC_DIR}/openssl_hack/lib/libcrypto.so.1.0.0 ${PREFIX}/lib/libcrypto.so.1.0.0
 
     # ${BUILD_PREFIX}/${HOST}/sysroot/usr/lib64 is because our compilers don't look in sysroot/usr/lib64
     # CentOS7 has:
@@ -115,7 +118,7 @@ if [[ $(uname) == "Linux" ]]; then
                  -L ${PREFIX}/lib \
                  -L ${BUILD_PREFIX}/${HOST}/sysroot/usr/lib64 \
                  -L ${BUILD_PREFIX}/${HOST}/sysroot/usr/lib \
-                 QMAKE_LFLAGS+="-Wl,-rpath,$PREFIX/lib -Wl,-rpath-link,$PREFIX/lib -L$PREFIX/lib" \
+                 QMAKE_LFLAGS+="-Wl,-rpath,$PREFIX/lib -Wl,-rpath-link,$PREFIX/lib -L$PREFIX/lib -L${SRC_DIR}/openssl_hack/lib" \
                  -release \
                  -opensource \
                  -confirm-license \
