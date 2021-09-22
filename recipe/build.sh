@@ -85,6 +85,11 @@ if [[ $(uname) == "Linux" ]]; then
         REDUCE_RELOCATIONS=-reduce-relocations
     fi
 
+    # CUPS requires OpenSSL 1.0.x series
+    conda create -y --prefix "${SRC_DIR}/openssl_hack"  \
+                  --no-deps --yes --copy --prefix "${SRC_DIR}/openssl_hack"  \
+                  openssl=1.0.2u
+
     # ${BUILD_PREFIX}/${HOST}/sysroot/usr/lib64 is because our compilers don't look in sysroot/usr/lib64
     # CentOS7 has:
     # LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/4.8.5/:/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../:/lib/:/usr/lib/
