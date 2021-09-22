@@ -90,6 +90,10 @@ if [[ $(uname) == "Linux" ]]; then
                   --no-deps --yes --copy --prefix "${SRC_DIR}/openssl_hack"  \
                   openssl=1.0.2u
 
+    # Rename the binaries because the CentOS ones have different version names
+    ln -s ${SRC_DIR}/openssl_hack/lib/libssl.so.1.0.0 ${SRC_DIR}/openssl_hack/lib/libssl.so.10
+    ln -s ${SRC_DIR}/openssl_hack/lib/libcrypto.so.1.0.0 ${SRC_DIR}/openssl_hack/lib/libcrypto.so.10
+
     # ${BUILD_PREFIX}/${HOST}/sysroot/usr/lib64 is because our compilers don't look in sysroot/usr/lib64
     # CentOS7 has:
     # LIBRARY_PATH=/usr/lib/gcc/x86_64-redhat-linux/4.8.5/:/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../../lib64/:/lib/../lib64/:/usr/lib/../lib64/:/usr/lib/gcc/x86_64-redhat-linux/4.8.5/../../../:/lib/:/usr/lib/
