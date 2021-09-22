@@ -111,6 +111,7 @@ if [[ $(uname) == "Linux" ]]; then
                  -datadir ${PREFIX} \
                  -I ${PREFIX}/include \
                  -I ${SRC_DIR}/openssl_hack/include \
+                 -L ${SRC_DIR}/openssl_hack/lib \
                  -L ${PREFIX}/lib \
                  -L ${BUILD_PREFIX}/${HOST}/sysroot/usr/lib64 \
                  -L ${BUILD_PREFIX}/${HOST}/sysroot/usr/lib \
