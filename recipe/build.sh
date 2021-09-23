@@ -154,75 +154,82 @@ fi
 
 if [[ ${HOST} =~ .*darwin.* ]]; then
 
-    # Avoid Xcode
-    cp "${RECIPE_DIR}"/xcrun .
-    cp "${RECIPE_DIR}"/xcodebuild .
-    # Some test runs 'clang -v', but I do not want to add it as a requirement just for that.
-    ln -s "${CXX}" ${HOST}-clang || true
-    # For ltcg we cannot use libtool (or at least not the macOS 10.9 system one) due to lack of LLVM bitcode support.
-    ln -s "${LIBTOOL}" libtool || true
-    # Just in-case our strip is better than the system one.
-    ln -s "${STRIP}" strip || true
-    chmod +x ${HOST}-clang libtool strip
-    # Qt passes clang flags to LD (e.g. -stdlib=c++)
-    export LD=${CXX}
-    PATH=${PWD}:${PATH}
+    # # Avoid Xcode
+    # cp "${RECIPE_DIR}"/xcrun .
+    # cp "${RECIPE_DIR}"/xcodebuild .
+    # # Some test runs 'clang -v', but I do not want to add it as a requirement just for that.
+    # ln -s "${CXX}" ${HOST}-clang || true
+    # # For ltcg we cannot use libtool (or at least not the macOS 10.9 system one) due to lack of LLVM bitcode support.
+    # ln -s "${LIBTOOL}" libtool || true
+    # # Just in-case our strip is better than the system one.
+    # ln -s "${STRIP}" strip || true
+    # chmod +x ${HOST}-clang libtool strip
+    # # Qt passes clang flags to LD (e.g. -stdlib=c++)
+    # export LD=${CXX}
+    # PATH=${PWD}:${PATH}
 
-    # Because of the use of Objective-C Generics we need at least MacOSX10.11.sdk
-    if [[ $(basename $CONDA_BUILD_SYSROOT) != "MacOSX10.12.sdk" ]]; then
-      echo "WARNING: You asked me to use $CONDA_BUILD_SYSROOT as the MacOS SDK"
-      echo "         But because of the use of Objective-C Generics we need at"
-      echo "         least MacOSX10.12.sdk"
-      CONDA_BUILD_SYSROOT=/opt/MacOSX10.12.sdk
-      if [[ ! -d $CONDA_BUILD_SYSROOT ]]; then
-        echo "ERROR: $CONDA_BUILD_SYSROOT is not a directory"
-        exit 1
-      fi
+    # # Because of the use of Objective-C Generics we need at least MacOSX10.11.sdk
+    # if [[ $(basename $CONDA_BUILD_SYSROOT) != "MacOSX10.12.sdk" ]]; then
+    #   echo "WARNING: You asked me to use $CONDA_BUILD_SYSROOT as the MacOS SDK"
+    #   echo "         But because of the use of Objective-C Generics we need at"
+    #   echo "         least MacOSX10.12.sdk"
+    #   CONDA_BUILD_SYSROOT=/opt/MacOSX10.12.sdk
+    #   if [[ ! -d $CONDA_BUILD_SYSROOT ]]; then
+    #     echo "ERROR: $CONDA_BUILD_SYSROOT is not a directory"
+    #     exit 1
+    #   fi
+    # fi
+
+    # sed -i.bak "s/-Wno-c++11-narrowing'/-Wno-c++11-narrowing', '-Wno-elaborated-enum-base'/g" qtwebengine/src/3rdparty/gn/build/gen.py
+    # sed -i.bak 's/-Wno-address-of-packed-member"/-Wno-address-of-packed-member", "-Wno-elaborated-enum-base"/g' qtwebengine/src/3rdparty/chromium/build/config/compiler/BUILD.gn
+
+    # # Move VERSION file which conflicts with version in libc++ headers in case-insensitive files
+    # mv qtwebengine/src/3rdparty/chromium/third_party/libsrtp/VERSION qtwebengine/src/3rdparty/chromium/third_party/libsrtp/LIBSRTP_VERSION || true;
+
+    # #             -qtlibinfix .conda \
+
+    PLATFORM=""
+    if [[ $(arch) == "arm64" ]]; then
+      PLATFORM="-device-option QMAKE_APPLE_DEVICE_ARCHS=arm64"
     fi
 
-    sed -i.bak "s/-Wno-c++11-narrowing'/-Wno-c++11-narrowing', '-Wno-elaborated-enum-base'/g" qtwebengine/src/3rdparty/gn/build/gen.py
-    sed -i.bak 's/-Wno-address-of-packed-member"/-Wno-address-of-packed-member", "-Wno-elaborated-enum-base"/g' qtwebengine/src/3rdparty/chromium/build/config/compiler/BUILD.gn
-
-    # Move VERSION file which conflicts with version in libc++ headers in case-insensitive files
-    mv qtwebengine/src/3rdparty/chromium/third_party/libsrtp/VERSION qtwebengine/src/3rdparty/chromium/third_party/libsrtp/LIBSRTP_VERSION || true;
-
-    #             -qtlibinfix .conda \
-
-    ./configure -prefix $PREFIX \
-                -libdir $PREFIX/lib \
-                -bindir $PREFIX/bin \
-                -headerdir $PREFIX/include/qt \
-                -archdatadir $PREFIX \
-                -datadir $PREFIX \
-                -L $PREFIX/lib \
-                -I $PREFIX/include \
-                -R $PREFIX/lib \
-                -release \
-                -opensource \
-                -confirm-license \
-                -shared \
-                -nomake examples \
-                -nomake tests \
-                -verbose \
-                -skip wayland \
-                -system-libjpeg \
-                -system-libpng \
-                -system-zlib \
-                -system-sqlite \
-                -plugin-sql-sqlite \
-                -plugin-sql-mysql \
-                -plugin-sql-psql \
-                -qt-freetype \
-                -qt-pcre \
-                -no-framework \
-                -dbus \
-                -no-mtdev \
-                -no-harfbuzz \
-                -no-libudev \
-                -no-egl \
-                -no-openssl \
-                -optimize-size \
-                -sdk macosx10.12
+    ../configure -prefix ${PREFIX} \
+                 -libdir ${PREFIX}/lib \
+                 -bindir ${PREFIX}/bin \
+                 -headerdir ${PREFIX}/include/qt \
+                 -archdatadir ${PREFIX} \
+                 -datadir ${PREFIX} \
+                 $PLATFORM \
+                 -I ${PREFIX}/include \
+                 -L ${PREFIX}/lib \
+                 -R $PREFIX/lib \
+                 -release \
+                 -opensource \
+                 -confirm-license \
+                 -shared \
+                 -nomake examples \
+                 -nomake tests \
+                 -verbose \
+                 -skip wayland \
+                 -skip qtwebengine \
+                 -system-libjpeg \
+                 -system-libpng \
+                 -system-zlib \
+                 -system-sqlite \
+                 -plugin-sql-sqlite \
+                 -plugin-sql-mysql \
+                 -plugin-sql-psql \
+                 -qt-freetype \
+                 -qt-pcre \
+                 -no-framework \
+                 -dbus \
+                 -no-mtdev \
+                 -no-harfbuzz \
+                 -no-libudev \
+                 -no-egl \
+                 -no-openssl \
+                 -optimize-size \
+                 -sdk macosx10.14
 
 # For quicker turnaround when e.g. checking compilers optimizations
 #                -skip qtwebsockets -skip qtwebchannel -skip qtwebengine -skip qtsvg -skip qtsensors -skip qtcanvas3d -skip qtconnectivity -skip declarative -skip multimedia -skip qttools -skip qtlocation -skip qt3d
@@ -230,18 +237,13 @@ if [[ ${HOST} =~ .*darwin.* ]]; then
 #                -ltcg \
 
     ####
-    make -j${MAKE_JOBS} module-qtwebengine || exit 1
-    if find . -name "libQt5WebEngine*dylib" -exec false {} +; then
-      echo "Did not build qtwebengine, exiting"
-      exit 1
-    fi
     make -j${MAKE_JOBS} || exit 1
     make install
 
     # Avoid Xcode (2)
-    mkdir -p "${PREFIX}"/bin/xc-avoidance || true
-    cp "${RECIPE_DIR}"/xcrun "${PREFIX}"/bin/xc-avoidance/
-    cp "${RECIPE_DIR}"/xcodebuild "${PREFIX}"/bin/xc-avoidance/
+    # mkdir -p "${PREFIX}"/bin/xc-avoidance || true
+    # cp "${RECIPE_DIR}"/xcrun "${PREFIX}"/bin/xc-avoidance/
+    # cp "${RECIPE_DIR}"/xcodebuild "${PREFIX}"/bin/xc-avoidance/
 fi
 
 # Qt Charts
