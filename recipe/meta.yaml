@@ -81,7 +81,7 @@ requirements:
     - {{ cdt('libxxf86vm') }}            # [linux]
     - {{ cdt('libxxf86vm-devel') }}      # [linux]
     - {{ cdt('libsm-devel') }}           # [linux]
-    - {{ cdt('libice-devel') }}           # [linux]
+    - {{ cdt('libice-devel') }}          # [linux]
     - {{ cdt('libxcb') }}                # [linux]
     - {{ cdt('libxcb-devel') }}          # [linux]
     - {{ cdt('expat-devel') }}           # [linux]
@@ -117,8 +117,6 @@ requirements:
     - llvm                               # [osx]
   host:
     # For pkg-config gl, fontconfig + freetype
-    - e2fsprogs-libs                     # [linux]
-    - avahi                              # [linux]
     - pthread-stubs                      # [linux]
     - dbus                               # [linux]
     - fontconfig                         # [linux]
@@ -149,8 +147,8 @@ requirements:
     - llvmdev
     - clangdev
     - libclang
-    - libcups                            # [linux]
     - xorg-libxfixes                     # [linux]
+    - libcups                            # [linux]
   run:
     - openssl                            # [not osx]
     - {{ pin_compatible("nss") }}        # [unix]
