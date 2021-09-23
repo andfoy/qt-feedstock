@@ -246,6 +246,7 @@ fi
 
 # Qt Charts
 # ---------
+popd
 pushd qtcharts
 ${PREFIX}/bin/qmake qtcharts.pro PREFIX=${PREFIX}
 make || exit 1
