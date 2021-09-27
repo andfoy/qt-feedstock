@@ -1,34 +1,40 @@
+MACOSX_DEPLOYMENT_TARGET:
+- '11.0'
 c_compiler:
-- vs2017
+- clang
+c_compiler_version:
+- '11'
 cdt_name:
 - cos7
 channel_sources:
-- conda-forge,defaults
+- conda-forge
 channel_targets:
 - conda-forge main
-curl:
-- '7'
 cxx_compiler:
-- vs2017
-gst_plugins_base:
-- '1.18'
-gstreamer:
-- '1.18'
+- clangxx
+cxx_compiler_version:
+- '11'
 icu:
 - '68'
 libjpeg_turbo:
 - '2'
 libpng:
 - '1.6'
-openssl:
-- 1.1.1
+macos_machine:
+- arm64-apple-darwin20.0.0
+nspr:
+- '4'
+nss:
+- '3'
 pin_run_as_build:
-  curl:
-    max_pin: x
   libjpeg_turbo:
     max_pin: x
   libpng:
     max_pin: x.x
+  nspr:
+    max_pin: x
+  nss:
+    max_pin: x
   sqlite:
     max_pin: x
   zlib:
@@ -36,6 +42,9 @@ pin_run_as_build:
 sqlite:
 - '3'
 target_platform:
-- win-64
+- osx-arm64
+zip_keys:
+- - c_compiler_version
+  - cxx_compiler_version
 zlib:
 - '1.2'
