@@ -153,41 +153,6 @@ if [[ $(uname) == "Linux" ]]; then
 fi
 
 if [[ ${HOST} =~ .*darwin.* ]]; then
-
-    # # Avoid Xcode
-    # cp "${RECIPE_DIR}"/xcrun .
-    # cp "${RECIPE_DIR}"/xcodebuild .
-    # # Some test runs 'clang -v', but I do not want to add it as a requirement just for that.
-    # ln -s "${CXX}" ${HOST}-clang || true
-    # # For ltcg we cannot use libtool (or at least not the macOS 10.9 system one) due to lack of LLVM bitcode support.
-    # ln -s "${LIBTOOL}" libtool || true
-    # # Just in-case our strip is better than the system one.
-    # ln -s "${STRIP}" strip || true
-    # chmod +x ${HOST}-clang libtool strip
-    # # Qt passes clang flags to LD (e.g. -stdlib=c++)
-    # export LD=${CXX}
-    # PATH=${PWD}:${PATH}
-
-    # # Because of the use of Objective-C Generics we need at least MacOSX10.11.sdk
-    # if [[ $(basename $CONDA_BUILD_SYSROOT) != "MacOSX10.12.sdk" ]]; then
-    #   echo "WARNING: You asked me to use $CONDA_BUILD_SYSROOT as the MacOS SDK"
-    #   echo "         But because of the use of Objective-C Generics we need at"
-    #   echo "         least MacOSX10.12.sdk"
-    #   CONDA_BUILD_SYSROOT=/opt/MacOSX10.12.sdk
-    #   if [[ ! -d $CONDA_BUILD_SYSROOT ]]; then
-    #     echo "ERROR: $CONDA_BUILD_SYSROOT is not a directory"
-    #     exit 1
-    #   fi
-    # fi
-
-    # sed -i.bak "s/-Wno-c++11-narrowing'/-Wno-c++11-narrowing', '-Wno-elaborated-enum-base'/g" qtwebengine/src/3rdparty/gn/build/gen.py
-    # sed -i.bak 's/-Wno-address-of-packed-member"/-Wno-address-of-packed-member", "-Wno-elaborated-enum-base"/g' qtwebengine/src/3rdparty/chromium/build/config/compiler/BUILD.gn
-
-    # # Move VERSION file which conflicts with version in libc++ headers in case-insensitive files
-    # mv qtwebengine/src/3rdparty/chromium/third_party/libsrtp/VERSION qtwebengine/src/3rdparty/chromium/third_party/libsrtp/LIBSRTP_VERSION || true;
-
-    # #             -qtlibinfix .conda \
-
     PLATFORM=""
     if [[ $(arch) == "arm64" ]]; then
       PLATFORM="-device-option QMAKE_APPLE_DEVICE_ARCHS=arm64"
@@ -239,11 +204,6 @@ if [[ ${HOST} =~ .*darwin.* ]]; then
     ####
     make -j${MAKE_JOBS} || exit 1
     make install
-
-    # Avoid Xcode (2)
-    # mkdir -p "${PREFIX}"/bin/xc-avoidance || true
-    # cp "${RECIPE_DIR}"/xcrun "${PREFIX}"/bin/xc-avoidance/
-    # cp "${RECIPE_DIR}"/xcodebuild "${PREFIX}"/bin/xc-avoidance/
 fi
 
 # Qt Charts
@@ -272,7 +232,7 @@ if [[ ${HOST} =~ .*darwin.* ]]; then
     # https://bugreports.qt.io/browse/QTBUG-41238
     sed -i '' 's/macosx.*$/macosx/g' mkspecs/qdevice.pri
     # We allow macOS SDK 10.12 while upstream requires 10.13 (as of Qt 5.12.1).
-    sed -i '' 's/QT_MAC_SDK_VERSION_MIN = 10\..*/QT_MAC_SDK_VERSION_MIN = 10\.12/g' mkspecs/common/macx.conf
+    sed -i '' 's/QT_MAC_SDK_VERSION_MIN = 10\..*/QT_MAC_SDK_VERSION_MIN = 10\.13/g' mkspecs/common/macx.conf
     # We may want to replace these with \$\${QMAKE_MAC_SDK_PATH}/ instead?
     sed -i '' "s|${CONDA_BUILD_SYSROOT}/|/|g" mkspecs/modules/*.pri
     CMAKE_FILES=$(find lib/cmake -name "Qt*.cmake")
